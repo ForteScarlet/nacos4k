@@ -17,6 +17,7 @@ repositories {
 
 dependencies {
     implementation(project(":nacos4k-api"))
+    implementation("io.ktor:ktor-server-core:$ktor_version")
     implementation("io.ktor:ktor-client-core:$ktor_version")
     implementation("com.alibaba.nacos:nacos-api:2.0.4") {
         exclude("*", "*")

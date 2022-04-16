@@ -16,14 +16,9 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":nacos4k-api"))
+    implementation("com.alibaba.nacos:nacos-client:2.0.4")
     implementation("io.ktor:ktor-client-core:$ktor_version")
-    implementation("com.alibaba.nacos:nacos-api:2.0.4") {
-        exclude("*", "*")
-    }
-    testImplementation("io.ktor:ktor-client-cio:$ktor_version")
-    testImplementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
-    testImplementation("io.ktor:ktor-serialization-jackson:$ktor_version")
+
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {

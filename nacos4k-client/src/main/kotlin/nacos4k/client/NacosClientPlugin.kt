@@ -16,14 +16,20 @@ import kotlinx.coroutines.launch
 
 internal val nacosSyncRequest = AttributeKey<Unit>("NacosSyncRequest")
 
-public class Nacos private constructor(
-    private val config: Config
-) {
+/**
+ * Nacos client 插件。
+ */
+public class NacosClient private constructor(
+    private val serverAddress: String,
+    private val syncClient: HttpClient?,
+
+    ) {
     private var syncJob: Job? = null
 
     @KtorDsl
     public class Config {
         public var serverAddress: String = "http://127.0.0.1:8848"
+        public var syncClient: HttpClient? = null
     }
 
 
@@ -48,7 +54,7 @@ public class Nacos private constructor(
     }
 
     private suspend fun sync(client: HttpClient) {
-        val response = client.get(config.serverAddress) {
+        val response = client.get(serverAddress) {
             url {
                 path("nacos", "v1", "ns", "instance", "list")
                 parameter("serviceName", "gateway")
@@ -67,17 +73,20 @@ public class Nacos private constructor(
     }
 
 
-    public companion object : HttpClientPlugin<Config, Nacos> {
-        override val key: AttributeKey<Nacos> = AttributeKey("Nacos")
+    public companion object : HttpClientPlugin<Config, NacosClient> {
+        override val key: AttributeKey<NacosClient> = AttributeKey("Nacos")
 
-        override fun install(plugin: Nacos, scope: HttpClient) {
-            plugin.initSyncJob(scope)
+        override fun install(plugin: NacosClient, scope: HttpClient) {
+            plugin.initSyncJob(plugin.syncClient ?: scope)
             plugin.setupNacosRequest(scope)
         }
 
-        override fun prepare(block: Config.() -> Unit): Nacos {
+        override fun prepare(block: Config.() -> Unit): NacosClient {
             val config = Config().apply(block)
-            return Nacos(config)
+            return NacosClient(
+                serverAddress = config.serverAddress,
+                syncClient = config.syncClient,
+            )
         }
     }
 }

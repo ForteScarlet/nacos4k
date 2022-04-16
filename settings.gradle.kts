@@ -13,4 +13,6 @@ pluginManagement {
     }
 }
 
+include("nacos4k-api")
+include("nacos4k-server")
 include("nacos4k-client")
