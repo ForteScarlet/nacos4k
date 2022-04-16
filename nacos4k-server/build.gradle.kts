@@ -5,6 +5,7 @@ val logback_version: String by project
 plugins {
     `java-library`
     kotlin("jvm")
+    id("org.jetbrains.dokka")
 }
 
 group = "forte.love"
@@ -16,10 +17,12 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":nacos4k-api"))
-    implementation("io.ktor:ktor-server-core:$ktor_version")
-    implementation("io.ktor:ktor-client-core:$ktor_version")
-    implementation("com.alibaba.nacos:nacos-api:2.0.4") {
+    api(project(":nacos4k-api"))
+    api("io.ktor:ktor-server-core:$ktor_version")
+    api("io.ktor:ktor-client-core:$ktor_version")
+
+
+    testImplementation("com.alibaba.nacos:nacos-api:2.0.4") {
         exclude("*", "*")
     }
     testImplementation("io.ktor:ktor-client-cio:$ktor_version")

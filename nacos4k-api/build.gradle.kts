@@ -5,6 +5,7 @@ val logback_version: String by project
 plugins {
     `java-library`
     kotlin("jvm")
+    id("org.jetbrains.dokka")
 }
 
 group = "forte.love"
@@ -16,9 +17,9 @@ repositories {
 }
 
 dependencies {
-    implementation("com.alibaba.nacos:nacos-client:2.0.4")
-    implementation("io.ktor:ktor-client-core:$ktor_version")
+    api("io.ktor:ktor-client-core:$ktor_version")
 
+    compileOnly("com.alibaba.nacos:nacos-client:2.0.4")
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {

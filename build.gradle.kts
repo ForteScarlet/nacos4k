@@ -1,14 +1,12 @@
-val ktor_version: String by project
-val kotlin_version: String by project
-val logback_version: String by project
-
 plugins {
     kotlin("jvm") apply false
 }
 
 group = "forte.love"
 version = "0.0.1"
+description = "在Ktor中使用nacos吧!"
 
+loadLocalProperties()
 
 repositories {
     mavenCentral()

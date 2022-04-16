@@ -2,7 +2,6 @@
 
 package nacos4k.client
 
-import com.alibaba.nacos.api.naming.pojo.ServiceInfo
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
@@ -13,6 +12,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import nacos4k.api.InstanceList
+import nacos4k.api.entity.Instance
+import nacos4k.api.entity.ServiceInfo
+import org.slf4j.LoggerFactory
 
 internal val nacosSyncRequest = AttributeKey<Unit>("NacosSyncRequest")
 
@@ -21,15 +24,26 @@ internal val nacosSyncRequest = AttributeKey<Unit>("NacosSyncRequest")
  */
 public class NacosClient private constructor(
     private val serverAddress: String,
-    private val syncClient: HttpClient?,
+    private val groupName: String?,
+    private val namespaceId: String?,
+    private val clusters: List<String>,
+    private val healthyOnly: Boolean,
 
-    ) {
+    private val hostSelector: NacosHostSelector,
+    private val syncClient: HttpClient?,
+) {
     private var syncJob: Job? = null
 
     @KtorDsl
     public class Config {
         public var serverAddress: String = "http://127.0.0.1:8848"
+        public var groupName: String? = null
+        public var namespaceId: String? = null
+        public var clusters: List<String> = emptyList()
+        public var healthyOnly: Boolean = false
+
         public var syncClient: HttpClient? = null
+        public var hostSelector: NacosHostSelector = NacosHostSelector.Random
     }
 
 
@@ -39,14 +53,34 @@ public class NacosClient private constructor(
                 return@intercept
             }
 
-            println("context.url.host: ${context.url.host}")
+
+            val host = context.url.host
+            logger.debug("context.url.host: {}", host)
+            val foundInstance = client.findServiceHost(host) ?: throw NoSuchElementException("Host for service '$host'")
+            logger.debug("Found instance: {}", foundInstance)
+            context.url.host = foundInstance.ip
         }
     }
 
+    private suspend fun HttpClient.findServiceHost(serviceName: String): Instance? {
+        val serviceInfoApi = InstanceList(
+            serviceName = serviceName,
+            groupName,
+            namespaceId,
+            clusters,
+            healthyOnly
+        )
+
+        val serviceInfo = serviceInfoApi.request(this, serverAddress)
+        return hostSelector(serviceInfo)
+    }
+
+
     private fun initSyncJob(scope: HttpClient): Job {
+        // TODO
         return scope.launch {
             while (scope.isActive) {
-                println("Sync nacos")
+                logger.debug("Sync nacos")
                 sync(scope)
                 delay(5000)
             }
@@ -54,6 +88,7 @@ public class NacosClient private constructor(
     }
 
     private suspend fun sync(client: HttpClient) {
+        // TODO
         val response = client.get(serverAddress) {
             url {
                 path("nacos", "v1", "ns", "instance", "list")
@@ -74,10 +109,11 @@ public class NacosClient private constructor(
 
 
     public companion object : HttpClientPlugin<Config, NacosClient> {
+        private val logger = LoggerFactory.getLogger("nacos4k.client")
         override val key: AttributeKey<NacosClient> = AttributeKey("NacosClient")
 
         override fun install(plugin: NacosClient, scope: HttpClient) {
-            plugin.initSyncJob(plugin.syncClient ?: scope)
+            // plugin.initSyncJob(plugin.syncClient ?: scope)
             plugin.setupNacosRequest(scope)
         }
 
@@ -85,6 +121,11 @@ public class NacosClient private constructor(
             val config = Config().apply(block)
             return NacosClient(
                 serverAddress = config.serverAddress,
+                groupName = config.groupName,
+                namespaceId = config.namespaceId,
+                clusters = config.clusters,
+                healthyOnly = config.healthyOnly,
+                hostSelector = config.hostSelector,
                 syncClient = config.syncClient,
             )
         }
@@ -92,3 +133,18 @@ public class NacosClient private constructor(
 }
 
 
+/**
+ * 服务选择器。
+ */
+public fun interface NacosHostSelector : (ServiceInfo) -> Instance? {
+
+
+    public object Random : NacosHostSelector {
+        override fun invoke(serviceInfo: ServiceInfo): Instance? {
+            return serviceInfo.hosts.randomOrNull()
+        }
+
+    }
+
+
+}
