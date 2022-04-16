@@ -25,6 +25,9 @@ dependencies {
     testImplementation("io.ktor:ktor-client-cio:$ktor_version")
     testImplementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
     testImplementation("io.ktor:ktor-serialization-jackson:$ktor_version")
+
+    implementation("io.ktor:ktor-server-netty:$ktor_version")
+
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {

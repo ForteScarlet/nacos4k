@@ -74,7 +74,7 @@ public class NacosClient private constructor(
 
 
     public companion object : HttpClientPlugin<Config, NacosClient> {
-        override val key: AttributeKey<NacosClient> = AttributeKey("Nacos")
+        override val key: AttributeKey<NacosClient> = AttributeKey("NacosClient")
 
         override fun install(plugin: NacosClient, scope: HttpClient) {
             plugin.initSyncJob(plugin.syncClient ?: scope)
