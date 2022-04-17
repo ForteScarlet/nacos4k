@@ -5,10 +5,17 @@
 ## 前言
 实用主义万岁！在做某些项目的时候想要试着脱离Spring，但是nacos却拖住了我的步伐。实际上实现一个 "可用的" nacos for ktor并不麻烦，但是如果想要全面一点，那可能还差点儿意思。
 
+## 注意事项与说明
+### 功能
+⚠ 注: 目前实现的功能还很简易，只是根据 [nacos open-api](https://nacos.io/zh-cn/docs/open-api.html) 中的部分API进行实现并主要用于满足我个人使用场景。
+
+目前实现的功能为最基础的单机nacos下的服务注册与服务发现。
 
 
+当然，假如你希望能够协助我们一起使得它能够实现更多功能，非常欢迎并期待您的 [pr](https://github.com/ForteScarlet/nacos4k/pulls) !
 
-## 安装
+### ⚠ 版本说明
+本库基于 **`ktor v2.0.0`** 开发，有可能不能用在 **`ktor v1.x`** 的版本中。
 
 ### 模块说明
 `nacos4k` 目前存在模块有：
@@ -19,8 +26,8 @@
 
 版本参考: [![](https://img.shields.io/maven-central/v/love.forte.nacos4k/nacos4k-api)](https://repo1.maven.org/maven2/love/forte/nacos4k/)
 
-### ⚠ 版本说明
-本库基于 **`ktor v2.0.0`** 开发，有可能不能用在 **`ktor v1.x`** 的版本中。
+
+## 安装
 
 
 **Maven**
@@ -57,14 +64,6 @@ implementation 'love.forte.nacos4k:nacos4k-server:${version}'
 ```
 
 ## 使用
-
-⚠ 注: 目前实现的功能还很简易，只是根据 [nacos open-api](https://nacos.io/zh-cn/docs/open-api.html) 中的部分API进行实现并主要用于满足我个人使用场景。
-
-目前实现的功能为最基础的单机nacos下的服务注册与服务发现。
-
-
-当然，假如你希望能够协助我们一起使得它能够实现更多功能，非常欢迎并期待您的 [pr](https://github.com/ForteScarlet/nacos4k/pulls) !
-
 
 ### 客户端
 ```kotlin
