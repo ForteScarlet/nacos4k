@@ -12,11 +12,10 @@
 
 ### 模块说明
 `nacos4k` 目前存在模块有：
-- **nacos4k-api**: 为其余模块提供通用支持，例如部分实体类定义。
+- **nacos4k-api**: 注意为下述其余模块提供通用支持，例如部分实体类定义。
 - **nacos4k-client**: ktor 客户端所使用的插件所在模块。
 - **nacos4k-server**: ktor 服务端所使用的插件所在模块。
 
-_下述安装示例以 `nacos4k-client` 模块为例，如有需要请自行修改至所需模块。_
 
 版本参考: [![](https://img.shields.io/maven-central/v/love.forte.nacos4k/nacos4k-api)](https://repo1.maven.org/maven2/love/forte/nacos4k/)
 
@@ -26,21 +25,35 @@ _下述安装示例以 `nacos4k-client` 模块为例，如有需要请自行修�
 
 **Maven**
 ```xml
+<!-- ktor客户端插件 -->
 <dependency>
     <groupId>love.forte.nacos4k</groupId>
     <artifactId>nacos4k-client</artifactId>
+    <version>${version}</version>
+</dependency>
+
+<!-- ktor服务端插件 -->
+<dependency>
+    <groupId>love.forte.nacos4k</groupId>
+    <artifactId>nacos4k-server</artifactId>
     <version>${version}</version>
 </dependency>
 ```
 
 **Gradle Kotlin DSL**
 ```kotlin
+// ktor客户端插件
 implementation("love.forte.nacos4k:nacos4k-client:${version}")
+// ktor服务端插件
+implementation("love.forte.nacos4k:nacos4k-server:${version}")
 ```
 
 **Gradle Groovy DSL**
 ```groovy
+// ktor客户端插件
 implementation 'love.forte.nacos4k:nacos4k-client:${version}'
+// ktor服务端插件
+implementation 'love.forte.nacos4k:nacos4k-server:${version}'
 ```
 
 ## 使用
