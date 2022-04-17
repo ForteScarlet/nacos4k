@@ -12,7 +12,7 @@
 目前实现的功能为最基础的单机nacos下的服务注册与服务发现。
 
 
-当然，假如你希望能够协助我们一起使得它能够实现更多功能，非常欢迎并期待您的 [pr](https://github.com/ForteScarlet/nacos4k/pulls) !
+当然，假如你希望能够协助我们一起使得它能够实现更多功能，非常欢迎并期待您的 [**PR**](https://github.com/ForteScarlet/nacos4k/pulls) !
 
 ### ⚠ 版本说明
 本库基于 **`ktor v2.0.0`** 开发，有可能不能用在 **`ktor v1.x`** 的版本中。
