@@ -6,8 +6,6 @@ plugins {
     id("org.jetbrains.dokka")
 }
 
-group = "forte.love"
-version = "0.0.1"
 
 repositories {
     mavenCentral()

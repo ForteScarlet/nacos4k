@@ -15,8 +15,6 @@
  *
  */
 
-@file:Suppress("NOTHING_TO_INLINE")
-
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.plugins.ExtraPropertiesExtension
@@ -25,9 +23,29 @@ import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.kotlin.dsl.*
+import org.gradle.plugins.signing.SigningExtension
 
 
-inline fun Project.configurePublishing(artifactId: String) {
+fun Project.doPublish(artifactId: String = name) {
+    afterEvaluate {
+        configurePublishing(artifactId)
+        println("[publishing-configure] - [$artifactId] configured.")
+        // set gpg file path to root
+        val secretKeyRingFileKey = "signing.secretKeyRingFile"
+        // val secretKeyRingFile = local().getProperty(secretKeyRingFileKey) ?: throw kotlin.NullPointerException(secretKeyRingFileKey)
+        val secretRingFile = rootProject.file("ForteScarlet.gpg")
+        println("secretRingFile exists: ${secretRingFile.exists()}")
+        extra[secretKeyRingFileKey] = secretRingFile
+        setProperty(secretKeyRingFileKey, secretRingFile)
+
+        extensions.configure<SigningExtension>("signing") {
+            sign(extensions.getByName<PublishingExtension>("publishing").publications)
+        }
+    }
+}
+
+
+fun Project.configurePublishing(artifactId: String) {
     val sourcesJar by tasks.registering(Jar::class) {
         archiveClassifier.set("sources")
         from(sourceSets["main"].allSource)
@@ -58,12 +76,12 @@ inline fun Project.configurePublishing(artifactId: String) {
         repositories {
             mavenLocal()
 
-            val username0 = extra.getIfHas("sonatype.username")?.toString() ?: run {
+            val username0 = rootProject.extra.getIfHas("sonatype.username")?.toString() ?: run {
                 println("[WARN] Cannot found sonatype.username from extra for $artifactId")
                 return@repositories
             }
 
-            val password0 = extra.get("sonatype.password")?.toString()
+            val password0 = rootProject.extra.get("sonatype.password")?.toString()
                 ?: throw NullPointerException("sonatype-password")
 
             maven {
@@ -174,7 +192,6 @@ fun MavenPublication.setupPom(project: Project) {
         }
 
 
-
     }
 
 }
@@ -202,7 +219,6 @@ object Sonatype {
 
     }
 }
-
 
 
 fun ExtraPropertiesExtension.getIfHas(key: String): Any? {
