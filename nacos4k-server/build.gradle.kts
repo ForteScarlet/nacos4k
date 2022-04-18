@@ -15,6 +15,8 @@ repositories {
 dependencies {
     api(project(":nacos4k-api"))
     api("io.ktor:ktor-server-core:$ktor_version")
+    api("io.ktor:ktor-server-host-common:$ktor_version")
+
     api("io.ktor:ktor-client-core:$ktor_version")
 
 

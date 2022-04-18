@@ -3,10 +3,12 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import nacos4k.server.NacosServer
-import kotlin.concurrent.thread
 
-fun main() {
+suspend fun main() {
 
     val server = embeddedServer(Netty, port = 10001) {
         install(NacosServer) {
@@ -21,11 +23,11 @@ fun main() {
         }
     }
 
-    server.start(wait = true)
-
-    Runtime.getRuntime().addShutdownHook(thread(start = false) {
+    GlobalScope.launch {
+        delay(5000)
         server.stop()
-    })
+    }
 
+    server.start(wait = true)
 
 }

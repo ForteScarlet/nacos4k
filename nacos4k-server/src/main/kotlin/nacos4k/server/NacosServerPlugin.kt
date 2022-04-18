@@ -10,6 +10,8 @@ import nacos4k.api.RegisterInstance
 import org.slf4j.LoggerFactory
 import java.net.InetAddress
 
+private val logger = LoggerFactory.getLogger("nacos4k.server")
+
 /**
  * Nacos服务端插件。
  *
@@ -18,15 +20,51 @@ public val NacosServer: ApplicationPlugin<NacosServerConfig> = createApplication
     name = "NacosServer",
     createConfiguration = ::NacosServerConfig
 ) {
-
-    val logger = LoggerFactory.getLogger("nacos4k.server")
-
     var beatJob: Job? = null
 
     val appPort = application.environment.config.port
-    val port = pluginConfig.port.takeIf { it > 0 }?.also {
-        logger.warn("pluginConfig.port <= 0, try using application.environment.config.port: {}", appPort)
-    } ?: appPort
+
+    val configPort = pluginConfig.port
+
+    fun getPort(): Int {
+        if (configPort > 0) {
+            return configPort
+        }
+
+        logger.debug("Plugin config's port <= 0, Try to get the port number automatically.")
+
+        // try to get the engine port.
+        // cannot use application.environment, for the reason see https://youtrack.jetbrains.com/issue/KTOR-4176
+        val environment = application.environment
+        val isApplicationEngineEnvironmentReloading = kotlin.runCatching {
+            environment is io.ktor.server.engine.ApplicationEngineEnvironmentReloading
+        }
+
+        return if (isApplicationEngineEnvironmentReloading.getOrElse { false }) {
+            environment as io.ktor.server.engine.ApplicationEngineEnvironmentReloading
+            environment.connectors.first().port
+        } else {
+            val exception = isApplicationEngineEnvironmentReloading.exceptionOrNull()
+
+            if (exception == null) {
+                logger.warn(
+                    "application.environment !is ApplicationEngineEnvironmentReloading. Try using application.environment.config.port: {}",
+                    appPort
+                )
+            } else {
+                logger.warn(
+                    "application.environment !is ApplicationEngineEnvironmentReloading, the reason: {}. Try using application.environment.config.port: {}",
+                    exception,
+                    appPort
+                )
+            }
+
+            appPort
+        }
+    }
+
+    val port by lazy(::getPort)
+
     val serverAddress = pluginConfig.serverAddress
 
     val serviceName = pluginConfig.serviceName
@@ -49,29 +87,6 @@ public val NacosServer: ApplicationPlugin<NacosServerConfig> = createApplication
         logger.warn("HttpClient is not configured, will use `HttpClient()` ")
     }
 
-    val register = RegisterInstance(
-        serviceName = serviceName,
-        ip = ip,
-        port = port,
-        groupName = groupName,
-        clusterName = clusterName,
-        namespaceId = namespaceId,
-        ephemeral = ephemeral,
-    )
-    val destroy = DestroyInstance(
-        serviceName = serviceName,
-        ip = ip,
-        port = port,
-        groupName = groupName,
-        clusterName = clusterName,
-        namespaceId = namespaceId,
-        ephemeral = ephemeral,
-    )
-
-    suspend fun destroy(): String {
-        return destroy.request(client, serverAddress)
-    }
-
     on(MonitoringEvent(ApplicationStarted)) { application ->
         logger.debug(
             "Registering service... serviceName={}, ip={}, port={}, groupName={}, namespaceId={}, ephemeral={}",
@@ -84,6 +99,16 @@ public val NacosServer: ApplicationPlugin<NacosServerConfig> = createApplication
         )
 
         application.launch {
+            val register = RegisterInstance(
+                serviceName = serviceName,
+                ip = ip,
+                port = port,
+                groupName = groupName,
+                clusterName = clusterName,
+                namespaceId = namespaceId,
+                ephemeral = ephemeral,
+            )
+
             try {
                 // request
                 val registered = register.request(client, serverAddress)
@@ -111,23 +136,32 @@ public val NacosServer: ApplicationPlugin<NacosServerConfig> = createApplication
                 application.dispose()
             }
         }
-
     }
 
+    on(MonitoringEvent(ApplicationStopping)) {
+        val destroy = DestroyInstance(
+            serviceName = serviceName,
+            ip = ip,
+            port = port,
+            groupName = groupName,
+            clusterName = clusterName,
+            namespaceId = namespaceId,
+            ephemeral = ephemeral,
+        )
 
-    on(MonitoringEvent(ApplicationStopPreparing)) {
         logger.info("Server is stopping, De-register nacos service instance...")
         beatJob?.cancel()
         beatJob = null
         runBlocking {
             kotlin.runCatching {
-                val result = destroy()
+                val result = destroy.request(client, serverAddress)
                 logger.info("Nacos destroy result: {}", result)
             }.getOrElse { e ->
                 logger.error("Nacos destroy request failure: $e", e)
             }
         }
     }
+
 
 }
 
