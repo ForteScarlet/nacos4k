@@ -117,11 +117,14 @@ val client = HttpClient {
 
 ### 服务端
 ```kotlin
-embeddedServer(Netty, port = 8080) {
+val serverPort = 11451
+embeddedServer(Netty, port = serverPort) {
     // ...
     install(NacosServer) {
         // 当前服务的服务名，用于向nacos注册。这是必须的参数
         serviceName = "test"
+        // 当前服务端口
+        port = serverPort
         // nacos的服务器地址
         serverAddress = "http://localhost:8848"
     }
@@ -141,6 +144,7 @@ embeddedServer(Netty, port = 8080) {
         ip = null
         
         // 当前服务的端口。如果值小于等于0，则与当前的服务一致。默认为-1
+        // TODO 但是目前发现怎么获取都是8080，因此建议尽量先自己指定一下。
         port = -1
 
         

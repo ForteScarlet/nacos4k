@@ -349,6 +349,8 @@ public class InstanceBeat(
         parameter("ephemeral", ephemeral)
     }
 
+    override fun toString(): String = "InstanceBeat(serviceName=$serviceName, beat=$beat, groupName=$groupName, ephemeral=$ephemeral)"
+
     public companion object {
         public const val API: String = "/nacos/v1/ns/instance/beat"
     }

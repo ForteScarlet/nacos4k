@@ -8,14 +8,14 @@ import kotlin.concurrent.thread
 
 fun main() {
 
-    val server = embeddedServer(Netty, port = 8080) {
+    val server = embeddedServer(Netty, port = 10001) {
         install(NacosServer) {
             serviceName = "test"
             serverAddress = "http://localhost:8848"
         }
 
         routing {
-            get("/") {
+            get {
                 call.respond("Hello World")
             }
         }

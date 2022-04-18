@@ -24,8 +24,9 @@ dependencies {
     testImplementation("io.ktor:ktor-client-cio:$ktor_version")
     testImplementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
     testImplementation("io.ktor:ktor-serialization-jackson:$ktor_version")
+    testImplementation("io.ktor:ktor-server-netty:$ktor_version")
+    testImplementation("love.forte.simbot:simbot-logger:3.0.0.preview.7.0")
 
-    implementation("io.ktor:ktor-server-netty:$ktor_version")
 
 }
 

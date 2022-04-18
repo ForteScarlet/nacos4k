@@ -3,10 +3,8 @@ package nacos4k.server
 import io.ktor.client.*
 import io.ktor.server.application.*
 import io.ktor.server.application.hooks.*
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import nacos4k.api.DestroyInstance
 import nacos4k.api.InstanceBeat
 import nacos4k.api.RegisterInstance
 import org.slf4j.LoggerFactory
@@ -20,12 +18,15 @@ public val NacosServer: ApplicationPlugin<NacosServerConfig> = createApplication
     name = "NacosServer",
     createConfiguration = ::NacosServerConfig
 ) {
+
     val logger = LoggerFactory.getLogger("nacos4k.server")
 
     var beatJob: Job? = null
 
     val appPort = application.environment.config.port
-    val port = pluginConfig.port.takeIf { it > 0 } ?: appPort
+    val port = pluginConfig.port.takeIf { it > 0 }?.also {
+        logger.warn("pluginConfig.port <= 0, try using application.environment.config.port: {}", appPort)
+    } ?: appPort
     val serverAddress = pluginConfig.serverAddress
 
     val serviceName = pluginConfig.serviceName
@@ -34,23 +35,44 @@ public val NacosServer: ApplicationPlugin<NacosServerConfig> = createApplication
     val groupName = pluginConfig.groupName
     val clusterName = pluginConfig.clusterName
     val namespaceId = pluginConfig.namespaceId
-    val ephemeral = pluginConfig.ephemeral
+    val ephemeral = pluginConfig.ephemeral ?: run {
+        if (application.developmentMode) {
+            logger.debug("application.developmentMode is true, and no pluginConfig.ephemeral is configured, ephemeral will be true.")
+            true
+        } else null
+    }
 
     val beatInterval = pluginConfig.beatInterval
 
 
+    val client = pluginConfig.client ?: HttpClient().also {
+        logger.warn("HttpClient is not configured, will use `HttpClient()` ")
+    }
+
+    val register = RegisterInstance(
+        serviceName = serviceName,
+        ip = ip,
+        port = port,
+        groupName = groupName,
+        clusterName = clusterName,
+        namespaceId = namespaceId,
+        ephemeral = ephemeral,
+    )
+    val destroy = DestroyInstance(
+        serviceName = serviceName,
+        ip = ip,
+        port = port,
+        groupName = groupName,
+        clusterName = clusterName,
+        namespaceId = namespaceId,
+        ephemeral = ephemeral,
+    )
+
+    suspend fun destroy(): String {
+        return destroy.request(client, serverAddress)
+    }
+
     on(MonitoringEvent(ApplicationStarted)) { application ->
-
-        val register = RegisterInstance(
-            serviceName = serviceName,
-            ip = ip,
-            port = port,
-            groupName = groupName,
-            clusterName = clusterName,
-            namespaceId = namespaceId,
-            ephemeral = ephemeral,
-        )
-
         logger.debug(
             "Registering service... serviceName={}, ip={}, port={}, groupName={}, namespaceId={}, ephemeral={}",
             serviceName,
@@ -60,11 +82,6 @@ public val NacosServer: ApplicationPlugin<NacosServerConfig> = createApplication
             namespaceId,
             ephemeral
         )
-
-        val client = pluginConfig.client ?: HttpClient().also {
-            logger.warn("HttpClient is not configured, will use `HttpClient()` ")
-        }
-
 
         application.launch {
             try {
@@ -78,6 +95,7 @@ public val NacosServer: ApplicationPlugin<NacosServerConfig> = createApplication
                     groupName = groupName,
                     ephemeral = ephemeral,
                 )
+
 
                 logger.debug("Start beat job, beatInterval={}", beatInterval)
 
@@ -94,13 +112,21 @@ public val NacosServer: ApplicationPlugin<NacosServerConfig> = createApplication
             }
         }
 
-
     }
 
 
-    on(MonitoringEvent(ApplicationStopped)) {
-        println("Server is stopped")
+    on(MonitoringEvent(ApplicationStopPreparing)) {
+        logger.info("Server is stopping, De-register nacos service instance...")
         beatJob?.cancel()
+        beatJob = null
+        runBlocking {
+            kotlin.runCatching {
+                val result = destroy()
+                logger.info("Nacos destroy result: {}", result)
+            }.getOrElse { e ->
+                logger.error("Nacos destroy request failure: $e", e)
+            }
+        }
     }
 
 }
